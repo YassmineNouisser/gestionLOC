@@ -8,7 +8,7 @@ import {
   TriangleAlert, Wallet, Wrench,
 } from 'lucide-react'
 import { dismissNotification, restoreNotification } from '@/lib/actions/notifications'
-import { date } from '@/lib/format'
+import { date, money } from '@/lib/format'
 import type { Notification } from '@/lib/types'
 
 const ICONS: Record<Notification['type'], React.ElementType> = {
@@ -24,6 +24,30 @@ const TONE: Record<Notification['severity'], { wrap: string; icon: string }> = {
   danger:  { wrap: 'border-bad-100 bg-bad-50',   icon: 'bg-bad-100 text-bad-700' },
   warning: { wrap: 'border-warn-100 bg-warn-50', icon: 'bg-warn-100 text-warn-700' },
   info:    { wrap: 'border-ink-200 bg-white',    icon: 'bg-brand-50 text-brand-600' },
+}
+
+/**
+ * Phrase de l'alerte, composée à l'affichage.
+ * Les montants passent par money() : « 1 580 DT », comme partout ailleurs.
+ */
+function describe(n: Notification): string {
+  const amount = n.amount === null ? '' : money(n.amount)
+  switch (n.type) {
+    case 'impaye':
+      return `${n.subject} : ${amount} dus depuis le ${date(n.ref_date)}`
+    case 'partiel':
+      return `${n.subject} : il reste ${amount} à percevoir`
+    case 'echeance':
+      return `${n.subject} : ${amount} à régler le ${date(n.ref_date)}`
+    case 'contrat':
+      return `${n.subject} — le bail se termine le ${date(n.ref_date)}`
+    case 'assurance':
+      return `${n.subject} — l'assurance expire le ${date(n.ref_date)}`
+    case 'maintenance':
+      return `${n.subject} — indisponible à la location`
+    default:
+      return n.subject
+  }
 }
 
 /** Lien vers l'élément concerné par l'alerte. */
@@ -67,8 +91,7 @@ export function NotificationCard({
 
       <div className="min-w-0 flex-1">
         <p className="font-bold text-ink-900">{n.title}</p>
-        <p className="mt-0.5 text-[15px] text-ink-600">{n.message}</p>
-        <p className="mt-1 text-sm text-ink-400">Concerne le {date(n.ref_date)}</p>
+        <p className="mt-0.5 text-[15px] text-ink-600">{describe(n)}</p>
         {error && <p role="alert" className="mt-2 text-sm text-bad-700">{error}</p>}
       </div>
 

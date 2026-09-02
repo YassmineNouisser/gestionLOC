@@ -203,12 +203,17 @@ export interface TenantStats {
   nb_impayes: number
 }
 
+/**
+ * La vue renvoie des données brutes : la phrase et le formatage des montants
+ * sont composés à l'affichage, avec le même formateur que le reste de l'app.
+ */
 export interface Notification {
   key: string
   type: 'impaye' | 'partiel' | 'echeance' | 'contrat' | 'assurance' | 'maintenance'
   severity: 'danger' | 'warning' | 'info'
   title: string
-  message: string
+  subject: string
+  amount: number | null
   ref_date: string
   entity_type: string
   entity_id: string
