@@ -1,26 +1,469 @@
 @import "tailwindcss";
 
+/* ===========================================================================
+   Design system — Gestion Locative
+   Registre : sobre et haut de gamme. Fond ivoire chaud, cartes blanches,
+   indigo profond en couleur d'action, or en accent rare.
+   Le mouvement sert la lecture : il indique l'ordre, jamais il ne décore.
+   Utilisateurs de 20 à 60 ans et plus : texte 16 px minimum, contrastes
+   élevés, cibles larges, et respect total de « réduire les animations ».
+   =========================================================================== */
+
+@theme {
+  --font-sans:    var(--font-sans-app), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-display), var(--font-sans-app), ui-sans-serif, system-ui, sans-serif;
+
+  /* Indigo profond — actions, liens, éléments actifs */
+  --color-brand-50:  #f1f3fb;
+  --color-brand-100: #e2e6f6;
+  --color-brand-200: #c7cfee;
+  --color-brand-300: #a0aee0;
+  --color-brand-400: #7186cd;
+  --color-brand-500: #4f63b6;
+  --color-brand-600: #3b4a9b;
+  --color-brand-700: #313d80;
+  --color-brand-800: #2a3468;
+  --color-brand-900: #242c54;
+  --color-brand-950: #171c36;
+
+  /* Or — accent rare : filet de marque, réussite, séparateurs de prestige */
+  --color-gold-50:  #fbf8f1;
+  --color-gold-100: #f5ecd8;
+  --color-gold-200: #ebd9ae;
+  --color-gold-300: #dcbe79;
+  --color-gold-400: #cba24e;
+  --color-gold-500: #b5883a;
+  --color-gold-600: #966c2e;
+  --color-gold-700: #785429;
+
+  /* Neutres tièdes — un gris légèrement chaud vieillit mieux qu'un gris bleu */
+  --color-ink-50:  #f9f8f6;
+  --color-ink-100: #f1efeb;
+  --color-ink-200: #e4e1da;
+  --color-ink-300: #cbc7bd;
+  --color-ink-400: #9d988c;
+  --color-ink-500: #726d61;
+  --color-ink-600: #57534a;
+  --color-ink-700: #403d36;
+  --color-ink-800: #2b2925;
+  --color-ink-900: #1b1a17;
+  --color-ink-950: #0f0e0d;
+
+  /* Sémantique */
+  --color-ok-50:   #eff8f1;
+  --color-ok-100:  #d6ecdb;
+  --color-ok-600:  #2f7d47;
+  --color-ok-700:  #24603a;
+  --color-warn-50: #fdf6e9;
+  --color-warn-100:#f8e8c6;
+  --color-warn-600:#a97514;
+  --color-warn-700:#835a10;
+  --color-bad-50:  #fdf1ef;
+  --color-bad-100: #f8dcd7;
+  --color-bad-600: #b53d2f;
+  --color-bad-700: #932f23;
+
+  /* Courbes et durées — une seule grammaire de mouvement pour toute l'app */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft:      cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring:    cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:            #f7f6f3;
+  --bg-tint:       #efedE8;
+  --surface:       #ffffff;
+  --surface-2:     #faf9f7;
+  --border:        #e7e4dd;
+  --border-strong: #d5d1c7;
+  --text:          #1b1a17;
+  --text-soft:     #57534a;
+
+  /* Ombres en couches basses : la profondeur se sent, elle ne se voit pas. */
+  --shadow-xs: 0 1px 2px rgb(27 26 23 / 0.04);
+  --shadow-sm: 0 1px 2px rgb(27 26 23 / 0.04), 0 2px 6px -2px rgb(27 26 23 / 0.05);
+  --shadow-md: 0 2px 4px -1px rgb(27 26 23 / 0.05), 0 8px 20px -6px rgb(27 26 23 / 0.10);
+  --shadow-lg: 0 4px 8px -2px rgb(27 26 23 / 0.06), 0 20px 40px -12px rgb(27 26 23 / 0.16);
+  --ring-brand: 0 0 0 3px rgb(59 74 155 / 0.14);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@media print {
+  :root { --bg: #ffffff; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* { border-color: var(--border); }
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Chiffres à chasse fixe et zéro barré : des colonnes de montants alignées. */
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+/* Voile lumineux très léger : évite le fond plat sans distraire. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(60rem 40rem at 15% -10%, rgb(59 74 155 / 0.045), transparent 60%),
+    radial-gradient(50rem 35rem at 110% 0%, rgb(181 136 58 / 0.035), transparent 55%);
+}
+
+::selection {
+  background: var(--color-brand-100);
+  color: var(--color-brand-900);
+}
+
+/* Focus : visible, généreux, jamais supprimé. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+input[type="date"],
+input[type="month"] { min-height: 2.75rem; }
+
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-300);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background-color: var(--color-ink-400); }
+
+/* ---------------------------------------------------------------------------
+   Mouvement
+   --------------------------------------------------------------------------- */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px) scale(0.995); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes sheen {
+  from { transform: translateX(-120%); }
+  to   { transform: translateX(220%); }
+}
+@keyframes shimmer {
+  from { background-position: -140% 0; }
+  to   { background-position: 140% 0; }
+}
+@keyframes draw-underline {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@layer utilities {
+  /* Entrée d'un bloc. `--i` échelonne les enfants d'une grille. */
+  .reveal {
+    animation: rise 0.55s var(--ease-out-quint) both;
+    animation-delay: calc(var(--i, 0) * 55ms);
+  }
+  .reveal-fade {
+    animation: fade-in 0.5s var(--ease-soft) both;
+    animation-delay: calc(var(--i, 0) * 55ms);
+  }
+
+  /* Échelonne automatiquement les enfants directs. */
+  .stagger > *:nth-child(1)  { --i: 0 }
+  .stagger > *:nth-child(2)  { --i: 1 }
+  .stagger > *:nth-child(3)  { --i: 2 }
+  .stagger > *:nth-child(4)  { --i: 3 }
+  .stagger > *:nth-child(5)  { --i: 4 }
+  .stagger > *:nth-child(6)  { --i: 5 }
+  .stagger > *:nth-child(7)  { --i: 6 }
+  .stagger > *:nth-child(8)  { --i: 7 }
+  .stagger > *:nth-child(9)  { --i: 8 }
+  .stagger > *:nth-child(10) { --i: 9 }
+  .stagger > *:nth-child(11) { --i: 10 }
+  .stagger > *:nth-child(12) { --i: 11 }
+
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.022em;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Composants
+   --------------------------------------------------------------------------- */
+@layer components {
+  .card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.875rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Filet lumineux en haut de carte : donne l'épaisseur d'un matériau. */
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    border-radius: inherit;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.9), transparent);
+    pointer-events: none;
+  }
+
+  .card-link {
+    transition:
+      box-shadow 0.35s var(--ease-out-quint),
+      border-color 0.35s var(--ease-out-quint),
+      transform 0.35s var(--ease-out-quint);
+    will-change: transform;
+  }
+  .card-link:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+  .card-link:active { transform: translateY(0); }
+
+  .section-title {
+    @apply mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-ink-500;
+  }
+
+  .label {
+    @apply block text-sm font-semibold text-ink-700 mb-1.5;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-ink-200 bg-white px-3.5 py-2.5 text-base text-ink-900
+           placeholder:text-ink-400;
+    transition: border-color 0.2s var(--ease-soft), box-shadow 0.2s var(--ease-soft);
+  }
+  .field:hover:not(:disabled):not(:focus) { border-color: var(--border-strong); }
+  .field:focus {
+    border-color: var(--color-brand-500);
+    box-shadow: var(--ring-brand);
+    outline: none;
+  }
+  .field:disabled { @apply bg-ink-50 text-ink-500 cursor-not-allowed; }
+  .field[aria-invalid="true"] { border-color: var(--color-bad-600); }
+
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-ghost {
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-lg
+           px-4 py-2.5 text-base font-semibold select-none whitespace-nowrap
+           disabled:opacity-50 disabled:cursor-not-allowed;
+    transition:
+      background-color 0.2s var(--ease-soft),
+      color 0.2s var(--ease-soft),
+      border-color 0.2s var(--ease-soft),
+      box-shadow 0.25s var(--ease-out-quint),
+      transform 0.12s var(--ease-soft);
+  }
+  .btn-primary:active:not(:disabled),
+  .btn-secondary:active:not(:disabled),
+  .btn-danger:active:not(:disabled) { transform: translateY(1px); }
+
+  .btn-primary {
+    background: linear-gradient(180deg, var(--color-brand-500), var(--color-brand-600));
+    @apply text-white;
+    box-shadow: 0 1px 2px rgb(27 26 23 / 0.10), inset 0 1px 0 rgb(255 255 255 / 0.14);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(180deg, var(--color-brand-600), var(--color-brand-700));
+    box-shadow: 0 4px 14px -4px rgb(59 74 155 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.14);
+  }
+  /* Reflet qui balaie le bouton principal au survol. */
+  .btn-primary::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.22), transparent);
+    transform: translateX(-120%);
+    pointer-events: none;
+  }
+  .btn-primary:hover:not(:disabled)::after { animation: sheen 0.75s var(--ease-soft); }
+
+  .btn-secondary {
+    @apply bg-white text-ink-800 border border-ink-200;
+    box-shadow: var(--shadow-xs);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    @apply bg-ink-50;
+    border-color: var(--border-strong);
+  }
+
+  .btn-danger { @apply bg-bad-600 text-white; box-shadow: var(--shadow-xs); }
+  .btn-danger:hover:not(:disabled) { @apply bg-bad-700; }
+
+  .btn-ghost { @apply text-ink-700; }
+  .btn-ghost:hover:not(:disabled) { @apply bg-ink-100; }
+
+  .btn-sm { @apply px-3 py-1.5 text-sm rounded-md; }
+
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1
+           text-xs font-semibold whitespace-nowrap;
+  }
+
+  .table-wrap {
+    @apply overflow-x-auto overscroll-x-contain;
+    background:
+      linear-gradient(to right, var(--surface) 30%, transparent),
+      linear-gradient(to left, var(--surface) 30%, transparent) 100% 0,
+      linear-gradient(to right, rgb(27 26 23 / 0.07), transparent 12px),
+      linear-gradient(to left, rgb(27 26 23 / 0.07), transparent 12px) 100% 0;
+    background-repeat: no-repeat;
+    background-size: 48px 100%, 48px 100%, 14px 100%, 14px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
+  .table { @apply w-full text-left text-[15px] border-collapse; }
+  .table thead th {
+    @apply px-4 py-2.5 text-[11px] font-bold uppercase
+           tracking-[0.09em] text-ink-500 whitespace-nowrap;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .table tbody td { @apply px-4 py-3 border-b border-ink-100 align-middle; }
+  .table tbody tr:last-child td { @apply border-b-0; }
+  .table tbody tr { transition: background-color 0.18s var(--ease-soft); }
+  .table tbody tr:hover { background: var(--surface-2); }
+  .table tfoot td { @apply px-4 py-3 font-bold text-ink-800; }
+  .table tfoot tr { background: var(--surface-2); border-top: 2px solid var(--border); }
+
+  .num { @apply text-right tabular-nums whitespace-nowrap; }
+
+  /* Lien de texte : le soulignement se déploie au survol. */
+  .link {
+    @apply relative font-medium text-brand-600;
+    transition: color 0.2s var(--ease-soft);
+  }
+  .link::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.28s var(--ease-out-quint);
+  }
+  .link:hover { @apply text-brand-700; }
+  .link:hover::after { transform: scaleX(1); }
+
+  .stat-value { @apply text-[1.75rem] font-bold tracking-tight tabular-nums; }
+
+  /* Squelette de chargement. */
+  .skeleton {
+    @apply rounded-md;
+    background: linear-gradient(
+      90deg,
+      var(--color-ink-100) 25%,
+      var(--color-ink-50) 50%,
+      var(--color-ink-100) 75%
+    );
+    background-size: 220% 100%;
+    animation: shimmer 1.5s linear infinite;
+  }
+}
+
+
+/* ---------------------------------------------------------------------------
+   Écran de connexion
+   Un panneau vitrine animé : aurores lentes, trame d'architecte, fenêtres
+   qui s'allument. Tout le mouvement est décoratif et se coupe entièrement
+   si le système demande de réduire les animations.
+   --------------------------------------------------------------------------- */
+@keyframes aurora-a {
+  0%, 100% { transform: translate3d(-8%, -6%, 0) scale(1); }
+  50%      { transform: translate3d(6%, 8%, 0) scale(1.15); }
+}
+@keyframes aurora-b {
+  0%, 100% { transform: translate3d(10%, 4%, 0) scale(1.1); }
+  50%      { transform: translate3d(-6%, -8%, 0) scale(0.95); }
+}
+@keyframes window-glow {
+  0%, 62%, 100% { opacity: 0.10; }
+  70%, 92%      { opacity: 0.85; }
+}
+@keyframes beam {
+  0%   { opacity: 0; transform: translateY(-30%) scaleY(0.6); }
+  35%  { opacity: 0.5; }
+  100% { opacity: 0; transform: translateY(120%) scaleY(1.4); }
+}
+
+@layer components {
+  .login-aurora {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(64px);
+    will-change: transform;
+  }
+
+  /* Trame d'architecte, atténuée vers les bords. */
+  .login-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.07) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.07) 1px, transparent 1px);
+    background-size: 46px 46px;
+    mask-image: radial-gradient(70% 60% at 50% 45%, #000 40%, transparent 100%);
+  }
+
+  .login-window { animation: window-glow 7s var(--ease-soft) infinite; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-aurora, .login-window { animation: none !important; }
+}
+
+/* ---------------------------------------------------------------------------
+   Préférence système : réduire les animations
+   Le mouvement est un confort, jamais une condition de lecture.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card-link:hover { transform: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Impression / export PDF
+   --------------------------------------------------------------------------- */
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  body::before { display: none; }
+  .card { box-shadow: none; border-color: #d0d5dd; break-inside: avoid; }
+  .card::before { display: none; }
+  .reveal, .reveal-fade { animation: none !important; }
+  main { padding: 0 !important; }
 }
