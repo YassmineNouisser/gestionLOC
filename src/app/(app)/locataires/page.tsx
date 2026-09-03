@@ -117,6 +117,7 @@ export default async function TenantsPage({
                 <th>CIN</th>
                 <th>Téléphone</th>
                 <th>Bien loué</th>
+                <th className="text-right">Montant total</th>
                 <th className="text-right">Total payé</th>
                 <th className="text-right">Impayés</th>
               </tr>
@@ -159,8 +160,9 @@ export default async function TenantsPage({
                         <Badge tone="neutral" dot={false}>Sans contrat</Badge>
                       )}
                     </td>
-                    <td className="text-right tabular-nums text-ok-700">{money(s?.total_paye ?? 0)}</td>
-                    <td className="text-right tabular-nums">
+                    <td className="num font-semibold text-ink-900">{money(s?.total_du ?? 0)}</td>
+                    <td className="num text-ok-700">{money(s?.total_paye ?? 0)}</td>
+                    <td className="num">
                       {impayes > 0
                         ? <span className="font-bold text-bad-700">{money(impayes)}</span>
                         : <span className="text-ink-400">—</span>}
@@ -169,6 +171,22 @@ export default async function TenantsPage({
                 )
               })}
             </tbody>
+            {tenants.length > 1 && (
+              <tfoot>
+                <tr>
+                  <td colSpan={4}>Total</td>
+                  <td className="num">
+                    {money(tenants.reduce((sum, t) => sum + Number(stats.get(t.id)?.total_du ?? 0), 0))}
+                  </td>
+                  <td className="num text-ok-700">
+                    {money(tenants.reduce((sum, t) => sum + Number(stats.get(t.id)?.total_paye ?? 0), 0))}
+                  </td>
+                  <td className="num text-bad-700">
+                    {money(tenants.reduce((sum, t) => sum + Number(stats.get(t.id)?.total_impayes ?? 0), 0))}
+                  </td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}
