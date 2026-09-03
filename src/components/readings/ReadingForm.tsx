@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import Link from 'next/link'
-import { Droplets, Info, Zap } from 'lucide-react'
+import { Calculator, Droplets, Info, Zap } from 'lucide-react'
 import {
   Field, FormError, FormGrid, FormSection, Input, Select, SubmitButton, Textarea,
 } from '@/components/ui/Form'
@@ -32,44 +32,46 @@ function IndexInput(props: React.InputHTMLAttributes<HTMLInputElement> & { unit:
   )
 }
 
-/** Bloc de résultat d'un fluide : consommation puis montant. */
-function Computed({
-  tone, consumption, unit, rate, amount,
+/**
+ * Case remplie par le calcul, pas par l'utilisateur.
+ * Volontairement en lecture seule et grisée : on doit voir d'un coup d'œil
+ * qu'elle se déduit des autres, et qu'il est inutile d'essayer de la corriger.
+ * Aucun attribut « name » : la valeur n'est pas envoyée, c'est PostgreSQL qui
+ * la recalcule à l'enregistrement.
+ */
+function ComputedField({
+  label, value, unit, hint, invalid = false, strong = false,
 }: {
-  tone: 'water' | 'elec'
-  consumption: number
+  label: string
+  value: number
   unit: string
-  rate: number
-  amount: number
+  hint?: string
+  invalid?: boolean
+  strong?: boolean
 }) {
-  const styles = tone === 'water'
-    ? 'bg-brand-50 ring-brand-100 text-brand-800'
-    : 'bg-warn-50 ring-warn-100 text-warn-800'
-
-  const invalid = consumption < 0
-
   return (
-    <div className={`mt-4 rounded-xl px-5 py-4 ring-1 ring-inset ${invalid ? 'bg-bad-50 text-bad-800 ring-bad-100' : styles}`}>
-      {invalid ? (
-        <p className="text-sm font-semibold">
-          Le nouvel index est inférieur à l&apos;ancien — vérifiez la saisie.
-        </p>
-      ) : (
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Consommation</p>
-            <p className="text-lg font-bold tabular-nums">
-              {num(consumption, 3)} {unit}
-            </p>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-semibold uppercase tracking-wide opacity-70">
-              × {num(rate, 3)} DT
-            </p>
-            <p className="text-xl font-bold tabular-nums">{money(amount)}</p>
-          </div>
-        </div>
-      )}
+    <div>
+      <span className="label flex items-center gap-1.5">
+        <Calculator className="size-3.5 text-ink-400" aria-hidden />
+        {label}
+      </span>
+      <div
+        className={`flex items-center justify-between rounded-lg border px-3.5 py-2.5 ${
+          invalid
+            ? 'border-bad-200 bg-bad-50'
+            : 'border-ink-200 bg-ink-50'
+        }`}
+      >
+        <output
+          className={`tabular-nums ${
+            invalid ? 'text-bad-700' : strong ? 'text-[1.05rem] font-bold text-ink-900' : 'text-ink-800'
+          }`}
+        >
+          {invalid ? 'Index décroissant' : num(value, 3)}
+        </output>
+        <span className="text-sm font-semibold text-ink-400">{unit}</span>
+      </div>
+      {hint && <p className="mt-1.5 text-sm text-ink-500">{hint}</p>}
     </div>
   )
 }
@@ -168,8 +170,11 @@ export function ReadingForm({
         </FormSection>
 
         {/* Eau */}
-        <FormSection title="Eau" description="Consommation = nouvel index − ancien index. Montant = consommation × tarif au m³.">
-          <FormGrid>
+        <FormSection
+          title="Eau"
+          description="Consommation = nouvel index − ancien index. Montant = consommation × tarif au m³."
+        >
+          <div className="grid gap-5 sm:grid-cols-3">
             <Field label="Ancien index" name="water_previous_index" required>
               <IndexInput name="water_previous_index" unit="m³" value={waterPrev}
                           onChange={(e) => setWaterPrev(e.target.value)} required />
@@ -178,19 +183,38 @@ export function ReadingForm({
               <IndexInput name="water_current_index" unit="m³" value={waterCur}
                           onChange={(e) => setWaterCur(e.target.value)} required />
             </Field>
+            <ComputedField
+              label="Consommation"
+              value={waterConsumption}
+              unit="m³"
+              invalid={waterConsumption < 0}
+              hint="Nouvel index − ancien index"
+            />
+          </div>
+
+          <div className="mt-5 grid gap-5 sm:grid-cols-3">
             <Field label="Tarif au m³" name="water_rate" required
                    hint="Repris du bien, modifiable pour ce relevé.">
               <IndexInput name="water_rate" unit="DT" value={waterRate}
                           onChange={(e) => setWaterRate(e.target.value)} required />
             </Field>
-          </FormGrid>
-          <Computed tone="water" consumption={waterConsumption} unit="m³"
-                    rate={Number(waterRate || 0)} amount={waterAmount} />
+            <ComputedField
+              label="Montant eau"
+              value={waterAmount}
+              unit="DT"
+              strong
+              invalid={waterConsumption < 0}
+              hint="Consommation × tarif"
+            />
+          </div>
         </FormSection>
 
         {/* Électricité */}
-        <FormSection title="Électricité" description="Consommation = nouvel index − ancien index. Montant = consommation × tarif au kWh.">
-          <FormGrid>
+        <FormSection
+          title="Électricité"
+          description="Consommation = nouvel index − ancien index. Montant = consommation × tarif au kWh."
+        >
+          <div className="grid gap-5 sm:grid-cols-3">
             <Field label="Ancien index" name="elec_previous_index" required>
               <IndexInput name="elec_previous_index" unit="kWh" value={elecPrev}
                           onChange={(e) => setElecPrev(e.target.value)} required />
@@ -199,14 +223,30 @@ export function ReadingForm({
               <IndexInput name="elec_current_index" unit="kWh" value={elecCur}
                           onChange={(e) => setElecCur(e.target.value)} required />
             </Field>
+            <ComputedField
+              label="Consommation"
+              value={elecConsumption}
+              unit="kWh"
+              invalid={elecConsumption < 0}
+              hint="Nouvel index − ancien index"
+            />
+          </div>
+
+          <div className="mt-5 grid gap-5 sm:grid-cols-3">
             <Field label="Tarif au kWh" name="elec_rate" required
                    hint="Repris du bien, modifiable pour ce relevé.">
               <IndexInput name="elec_rate" unit="DT" value={elecRate}
                           onChange={(e) => setElecRate(e.target.value)} required />
             </Field>
-          </FormGrid>
-          <Computed tone="elec" consumption={elecConsumption} unit="kWh"
-                    rate={Number(elecRate || 0)} amount={elecAmount} />
+            <ComputedField
+              label="Montant électricité"
+              value={elecAmount}
+              unit="DT"
+              strong
+              invalid={elecConsumption < 0}
+              hint="Consommation × tarif"
+            />
+          </div>
         </FormSection>
 
         <FormSection title="Notes">
