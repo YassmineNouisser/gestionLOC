@@ -106,6 +106,20 @@ export function PropertyForm({
           </FormGrid>
         </FormSection>
 
+        <FormSection
+          title="Tarifs des compteurs"
+          description="Servent de valeurs par défaut lors d'un relevé d'eau ou d'électricité. Chaque relevé reste modifiable individuellement."
+        >
+          <FormGrid>
+            <Field label="Tarif de l'eau" name="water_rate" hint="En dinars par mètre cube.">
+              <MoneyInput name="water_rate" defaultValue={property?.water_rate ?? ''} placeholder="0" />
+            </Field>
+            <Field label="Tarif de l'électricité" name="electricity_rate" hint="En dinars par kilowattheure.">
+              <MoneyInput name="electricity_rate" defaultValue={property?.electricity_rate ?? ''} placeholder="0" />
+            </Field>
+          </FormGrid>
+        </FormSection>
+
         <FormSection title="Notes">
           <Field label="Informations complémentaires" name="notes">
             <Textarea name="notes" defaultValue={property?.notes ?? ''} rows={4}

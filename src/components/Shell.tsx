@@ -4,8 +4,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  Bell, Building2, ChevronDown, FileBarChart, FileText, Files, Home, LayoutDashboard,
-  LogOut, Menu, Receipt, Search, Settings, TrendingUp, Users, Wallet, X,
+  Bell, Building2, ChevronDown, FileBarChart, FileText, Files, Gauge, Home,
+  LayoutDashboard, LogOut, Menu, Receipt, Search, Settings, TrendingUp, Users, Wallet, X,
 } from 'lucide-react'
 import { signOut } from '@/lib/actions/auth'
 
@@ -32,6 +32,7 @@ const NAV = [
       { href: '/loyers',    label: 'Loyers',    icon: Receipt },
       { href: '/paiements', label: 'Paiements', icon: Wallet },
       { href: '/depenses',  label: 'Dépenses',  icon: Building2 },
+      { href: '/releves',   label: 'Eau & élec.', icon: Gauge },
     ],
   },
   {

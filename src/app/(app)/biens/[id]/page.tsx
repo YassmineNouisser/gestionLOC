@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
-  ArrowLeft, Building2, FileText, Pencil, Plus, Receipt, TrendingUp, User, Wallet,
+  ArrowLeft, Building2, FileText, Gauge, Pencil, Plus, Receipt, TrendingUp, Wallet,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { requireUser } from '@/lib/auth'
@@ -17,7 +17,8 @@ import {
   PROPERTY_TYPE, date, money, monthLabel, num, percent, tenantName,
 } from '@/lib/format'
 import type {
-  Contract, DocumentRow, Expense, Property, PropertyStats, RentView, Tenant,
+  Contract, DocumentRow, Expense, MeterReadingView, Property, PropertyStats,
+  RentView, Tenant,
 } from '@/lib/types'
 
 export async function generateMetadata({
@@ -54,7 +55,7 @@ export default async function PropertyDetailPage({
 
   const [
     { data: statsRow }, { data: contractRows }, { data: rentRows },
-    { data: expenseRows }, { data: docRows },
+    { data: expenseRows }, { data: docRows }, { data: readingRows },
   ] = await Promise.all([
     supabase.from('v_property_stats').select('*').eq('property_id', id).maybeSingle(),
     supabase.from('contracts')
@@ -67,6 +68,8 @@ export default async function PropertyDetailPage({
       .order('expense_date', { ascending: false }).limit(10),
     supabase.from('documents').select('*').eq('entity_type', 'property').eq('entity_id', id)
       .order('created_at', { ascending: false }),
+    supabase.from('v_meter_readings').select('*').eq('property_id', id)
+      .order('period_month', { ascending: false }).limit(6),
   ])
 
   const stats = statsRow as PropertyStats | null
@@ -77,6 +80,7 @@ export default async function PropertyDetailPage({
   const rents = (rentRows ?? []) as RentView[]
   const expenses = (expenseRows ?? []) as Expense[]
   const documents = (docRows ?? []) as DocumentRow[]
+  const readings = (readingRows ?? []) as MeterReadingView[]
 
   return (
     <>
@@ -295,6 +299,65 @@ export default async function PropertyDetailPage({
             )}
           </section>
 
+          {/* Relevés d'eau et d'électricité */}
+          <section className="card">
+            <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
+              <h2 className="flex items-center gap-2 text-[17px] font-bold text-ink-900">
+                <Gauge className="size-5 text-ink-400" aria-hidden />
+                Eau et électricité
+              </h2>
+              <div className="flex items-center gap-2">
+                <Link href={`/releves?bien=${id}`} className="link text-sm">Tout voir</Link>
+                {user.canWrite && (
+                  <Link href={`/releves/nouveau?bien=${id}`} className="btn-secondary btn-sm">
+                    <Plus className="size-4" aria-hidden />
+                    Relever
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            {readings.length === 0 ? (
+              <p className="px-5 py-8 text-center text-[15px] text-ink-500">
+                Aucun relevé pour ce bien. Saisissez les index : la consommation et le
+                montant à refacturer se calculent automatiquement.
+              </p>
+            ) : (
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Mois</th>
+                      <th className="text-right">Eau</th>
+                      <th className="text-right">Électricité</th>
+                      <th className="text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {readings.map((r) => (
+                      <tr key={r.id}>
+                        <td className="whitespace-nowrap font-medium">
+                          <Link href={`/releves/${r.id}/modifier`} className="link">
+                            {monthLabel(r.period_month)}
+                          </Link>
+                        </td>
+                        <td className="num">
+                          <span className="block font-semibold text-brand-700">{money(r.water_amount)}</span>
+                          <span className="block text-sm text-ink-500">{num(r.water_consumption, 2)} m³</span>
+                        </td>
+                        <td className="num">
+                          <span className="block font-semibold text-warn-700">{money(r.elec_amount)}</span>
+                          <span className="block text-sm text-ink-500">{num(r.elec_consumption, 2)} kWh</span>
+                        </td>
+                        <td className="num font-bold text-ink-900">{money(r.total_amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
           {/* Anciens contrats */}
           {pastContracts.length > 0 && (
             <section className="card">
@@ -338,6 +401,8 @@ export default async function PropertyDetailPage({
               <InfoRow label="Chambres" value={property.rooms ?? '—'} />
               <InfoRow label="Loyer de référence" value={money(property.monthly_rent)} />
               <InfoRow label="Charges" value={money(property.charges)} />
+              <InfoRow label="Tarif eau" value={`${num(property.water_rate, 3)} DT / m³`} />
+              <InfoRow label="Tarif électricité" value={`${num(property.electricity_rate, 3)} DT / kWh`} />
             </dl>
           </section>
 

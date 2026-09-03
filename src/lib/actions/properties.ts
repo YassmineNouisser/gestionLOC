@@ -22,6 +22,8 @@ function parse(fd: FormData) {
     initial_works: numberOr(fd, 'initial_works'),
     monthly_rent: numberOr(fd, 'monthly_rent'),
     charges: numberOr(fd, 'charges'),
+    water_rate: numberOr(fd, 'water_rate'),
+    electricity_rate: numberOr(fd, 'electricity_rate'),
     insurance_expiry: dateOrNull(fd, 'insurance_expiry'),
     notes: text(fd, 'notes'),
   }
@@ -32,6 +34,7 @@ function validate(v: ReturnType<typeof parse>): string | null {
   if (!v.name) return 'Le nom du bien est obligatoire.'
   if (v.surface !== null && v.surface < 0) return 'La surface ne peut pas être négative.'
   if (v.rooms !== null && v.rooms < 0) return 'Le nombre de chambres ne peut pas être négatif.'
+  if (v.water_rate < 0 || v.electricity_rate < 0) return 'Les tarifs ne peuvent pas être négatifs.'
   return null
 }
 

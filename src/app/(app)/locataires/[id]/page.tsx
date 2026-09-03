@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
-  ArrowLeft, Briefcase, FileText, Mail, MapPin, Pencil, Phone, Plus,
+  ArrowLeft, Briefcase, FileText, Gauge, Mail, MapPin, Pencil, Phone, Plus,
   ShieldAlert, TriangleAlert, Wallet,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
@@ -13,9 +13,10 @@ import { StatCard } from '@/components/ui/StatCard'
 import { DeleteButton } from '@/components/ui/DeleteButton'
 import { DocumentsPanel } from '@/components/documents/DocumentsPanel'
 import { deleteTenant } from '@/lib/actions/tenants'
-import { PAYMENT_METHOD, date, money, monthLabel } from '@/lib/format'
+import { PAYMENT_METHOD, date, money, monthLabel, num } from '@/lib/format'
 import type {
-  Contract, DocumentRow, Payment, Property, RentView, Tenant, TenantStats,
+  Contract, DocumentRow, MeterReadingView, Payment, Property, RentView,
+  Tenant, TenantStats,
 } from '@/lib/types'
 
 export async function generateMetadata({
@@ -57,7 +58,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
 
   const [
     { data: statsRow }, { data: contractRows }, { data: rentRows },
-    { data: paymentRows }, { data: docRows },
+    { data: paymentRows }, { data: docRows }, { data: readingRows },
   ] = await Promise.all([
     supabase.from('v_tenant_stats').select('*').eq('tenant_id', id).maybeSingle(),
     supabase.from('contracts')
@@ -70,6 +71,8 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
       .eq('tenant_id', id).order('payment_date', { ascending: false }).limit(15),
     supabase.from('documents').select('*').eq('entity_type', 'tenant').eq('entity_id', id)
       .order('created_at', { ascending: false }),
+    supabase.from('v_meter_readings').select('*').eq('tenant_id', id)
+      .order('period_month', { ascending: false }).limit(6),
   ])
 
   const stats = statsRow as TenantStats | null
@@ -81,6 +84,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
   const unpaid = rents.filter((r) => r.balance > 0)
   const payments = (paymentRows ?? []) as (Payment & { rents: { period_month: string } | null })[]
   const documents = (docRows ?? []) as DocumentRow[]
+  const readings = (readingRows ?? []) as MeterReadingView[]
 
   return (
     <>
@@ -238,6 +242,62 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
               </div>
             )}
           </section>
+
+          {/* Eau et électricité refacturées */}
+          {readings.length > 0 && (
+            <section className="card">
+              <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
+                <h2 className="flex items-center gap-2 text-[17px] font-bold text-ink-900">
+                  <Gauge className="size-5 text-ink-400" aria-hidden />
+                  Eau et électricité
+                </h2>
+                <Link href={`/releves?q=${encodeURIComponent(tenant.last_name)}`} className="link text-sm">
+                  Tout voir
+                </Link>
+              </div>
+              <div className="table-wrap">
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Mois</th><th>Bien</th>
+                      <th className="text-right">Eau</th>
+                      <th className="text-right">Électricité</th>
+                      <th className="text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {readings.map((r) => (
+                      <tr key={r.id}>
+                        <td className="whitespace-nowrap font-medium">
+                          <Link href={`/releves/${r.id}/modifier`} className="link">
+                            {monthLabel(r.period_month)}
+                          </Link>
+                        </td>
+                        <td className="text-ink-600">{r.property_name}</td>
+                        <td className="num">
+                          <span className="block font-semibold text-brand-700">{money(r.water_amount)}</span>
+                          <span className="block text-sm text-ink-500">{num(r.water_consumption, 2)} m³</span>
+                        </td>
+                        <td className="num">
+                          <span className="block font-semibold text-warn-700">{money(r.elec_amount)}</span>
+                          <span className="block text-sm text-ink-500">{num(r.elec_consumption, 2)} kWh</span>
+                        </td>
+                        <td className="num font-bold text-ink-900">{money(r.total_amount)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4}>Total refacturé</td>
+                      <td className="num">
+                        {money(readings.reduce((s, r) => s + Number(r.total_amount), 0))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </section>
+          )}
 
           {/* Anciens contrats */}
           {pastContracts.length > 0 && (

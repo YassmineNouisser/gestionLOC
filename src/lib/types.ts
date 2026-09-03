@@ -32,6 +32,8 @@ export interface Property {
   total_investment: number
   monthly_rent: number
   charges: number
+  water_rate: number
+  electricity_rate: number
   status: PropertyStatus
   insurance_expiry: string | null
   notes: string | null
@@ -228,4 +230,40 @@ export interface AuditEntry {
   new_data: Record<string, unknown> | null
   user_id: string | null
   created_at: string
+}
+
+/**
+ * Relevé de compteurs. Consommations et montants sont des colonnes générées
+ * par PostgreSQL : ils ne peuvent pas diverger des index saisis.
+ */
+export interface MeterReading {
+  id: string
+  property_id: string
+  contract_id: string | null
+  tenant_id: string | null
+  period_month: string
+  reading_date: string
+  water_previous_index: number
+  water_current_index: number
+  water_rate: number
+  water_consumption: number
+  water_amount: number
+  elec_previous_index: number
+  elec_current_index: number
+  elec_rate: number
+  elec_consumption: number
+  elec_amount: number
+  total_amount: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+/** Vue v_meter_readings : relevé enrichi du bien et du locataire. */
+export interface MeterReadingView extends MeterReading {
+  property_reference: string
+  property_name: string
+  property_city: string | null
+  tenant_first_name: string | null
+  tenant_last_name: string | null
 }
