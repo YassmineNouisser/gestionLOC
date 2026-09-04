@@ -203,6 +203,8 @@ export const AUDIT_TABLE: Record<string, string> = {
   contracts: 'Contrat',
   payments: 'Paiement',
   expenses: 'Dépense',
+  meter_readings: 'Relevé de compteurs',
+  deposit_payments: 'Versement de caution',
 }
 
 export const AUDIT_ACTION: Record<string, string> = {

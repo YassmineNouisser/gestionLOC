@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
 import { FilterBar, ResetFilters, SelectFilter } from '@/components/ui/Filters'
-import { AUDIT_ACTION, AUDIT_TABLE, dateTime, money } from '@/lib/format'
+import { AUDIT_ACTION, AUDIT_TABLE, date, dateTime, money, monthLabel } from '@/lib/format'
 import type { AuditEntry } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Historique' }
@@ -26,11 +26,15 @@ function describe(entry: AuditEntry): string {
     case 'tenants':
       return [str('first_name'), str('last_name')].filter(Boolean).join(' ') || '—'
     case 'contracts':
-      return `Contrat du ${str('start_date') || '—'} · ${money(Number(data.monthly_rent ?? 0))}`
+      return `Contrat du ${date(str('start_date')) } · ${money(Number(data.monthly_rent ?? 0))}`
     case 'payments':
-      return `${money(Number(data.amount ?? 0))} le ${str('payment_date') || '—'}`
+      return `${money(Number(data.amount ?? 0))} le ${date(str('payment_date'))}`
     case 'expenses':
-      return `${money(Number(data.amount ?? 0))} · ${str('category') || '—'}`
+      return `${money(Number(data.amount ?? 0))} · ${str('category') || '—'} · ${date(str('expense_date'))}`
+    case 'deposit_payments':
+      return `${money(Number(data.amount ?? 0))} le ${date(str('payment_date'))}`
+    case 'meter_readings':
+      return `${monthLabel(str('period_month'))} · total ${money(Number(data.total_amount ?? 0))}`
     default:
       return '—'
   }
