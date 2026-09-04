@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { Badge } from '@/components/ui/Badge'
 import { FilterBar, ResetFilters, SearchFilter, SelectFilter } from '@/components/ui/Filters'
 import { money } from '@/lib/format'
-import type { Contract, Property, Tenant, TenantStats } from '@/lib/types'
+import type { Contract, ContractDeposit, Property, Tenant, TenantStats } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Locataires' }
 
@@ -29,13 +29,15 @@ export default async function TenantsPage({
     )
   }
 
-  const [{ data: tenantRows, error }, { data: statRows }, { data: contractRows }] = await Promise.all([
-    query,
-    supabase.from('v_tenant_stats').select('*'),
-    supabase.from('contracts')
-      .select('id, tenant_id, property_id, monthly_rent, properties(name, reference)')
-      .eq('status', 'actif'),
-  ])
+  const [{ data: tenantRows, error }, { data: statRows }, { data: contractRows }, { data: depositRows }] =
+    await Promise.all([
+      query,
+      supabase.from('v_tenant_stats').select('*'),
+      supabase.from('contracts')
+        .select('id, tenant_id, property_id, monthly_rent, properties(name, reference)')
+        .eq('status', 'actif'),
+      supabase.from('v_contract_deposits').select('*'),
+    ])
 
   const stats = new Map<string, TenantStats>(
     rows<TenantStats>(statRows).map((s) => [s.tenant_id, s]),
@@ -46,6 +48,20 @@ export default async function TenantsPage({
   const activeByTenant = new Map<string, ActiveContract>(
     rows<ActiveContract>(contractRows).map((c) => [c.tenant_id, c]),
   )
+
+  /*
+   * Cautions cumulées par locataire, tous contrats confondus.
+   * Elles restent à l'écart des loyers : une caution se verse une fois au
+   * début du bail, l'additionner aux loyers mensuels n'aurait aucun sens.
+   */
+  const depositByTenant = new Map<string, { due: number; paid: number; balance: number }>()
+  for (const d of rows<ContractDeposit>(depositRows)) {
+    const acc = depositByTenant.get(d.tenant_id) ?? { due: 0, paid: 0, balance: 0 }
+    acc.due += Number(d.deposit_due)
+    acc.paid += Number(d.deposit_paid)
+    acc.balance += Number(d.deposit_balance)
+    depositByTenant.set(d.tenant_id, acc)
+  }
 
   let tenants = rows<Tenant>(tenantRows)
   if (etat === 'actif') tenants = tenants.filter((t) => activeByTenant.has(t.id))
@@ -117,9 +133,10 @@ export default async function TenantsPage({
                 <th>CIN</th>
                 <th>Téléphone</th>
                 <th>Bien loué</th>
-                <th className="text-right">Montant total</th>
-                <th className="text-right">Total payé</th>
+                <th className="text-right">Loyers dus</th>
+                <th className="text-right">Loyers payés</th>
                 <th className="text-right">Impayés</th>
+                <th className="text-right">Caution</th>
               </tr>
             </thead>
             <tbody>
@@ -127,6 +144,7 @@ export default async function TenantsPage({
                 const s = stats.get(t.id)
                 const contract = activeByTenant.get(t.id)
                 const impayes = Number(s?.total_impayes ?? 0)
+                const deposit = depositByTenant.get(t.id)
                 return (
                   <tr key={t.id}>
                     <td>
@@ -167,6 +185,20 @@ export default async function TenantsPage({
                         ? <span className="font-bold text-bad-700">{money(impayes)}</span>
                         : <span className="text-ink-400">—</span>}
                     </td>
+                    <td className="num">
+                      {deposit && deposit.due > 0 ? (
+                        <>
+                          <span className="block font-semibold text-ok-700">
+                            {money(deposit.paid)}
+                          </span>
+                          <span className={`block text-sm ${deposit.balance > 0 ? 'text-warn-700' : 'text-ink-400'}`}>
+                            {deposit.balance > 0 ? `reste ${money(deposit.balance)}` : 'versée'}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-ink-400">—</span>
+                      )}
+                    </td>
                   </tr>
                 )
               })}
@@ -183,6 +215,9 @@ export default async function TenantsPage({
                   </td>
                   <td className="num text-bad-700">
                     {money(tenants.reduce((sum, t) => sum + Number(stats.get(t.id)?.total_impayes ?? 0), 0))}
+                  </td>
+                  <td className="num text-ok-700">
+                    {money(tenants.reduce((sum, t) => sum + (depositByTenant.get(t.id)?.paid ?? 0), 0))}
                   </td>
                 </tr>
               </tfoot>
