@@ -34,7 +34,7 @@ export default async function TenantsPage({
       query,
       supabase.from('v_tenant_stats').select('*'),
       supabase.from('contracts')
-        .select('id, tenant_id, property_id, monthly_rent, properties(name, reference)')
+        .select('id, tenant_id, property_id, monthly_rent, charges, properties(name, reference)')
         .eq('status', 'actif'),
       supabase.from('v_contract_deposits').select('*'),
     ])
@@ -42,7 +42,7 @@ export default async function TenantsPage({
   const stats = new Map<string, TenantStats>(
     rows<TenantStats>(statRows).map((s) => [s.tenant_id, s]),
   )
-  type ActiveContract = Pick<Contract, 'id' | 'tenant_id' | 'property_id' | 'monthly_rent'> & {
+  type ActiveContract = Pick<Contract, 'id' | 'tenant_id' | 'property_id' | 'monthly_rent' | 'charges'> & {
     properties: Pick<Property, 'name' | 'reference'> | null
   }
   const activeByTenant = new Map<string, ActiveContract>(
@@ -130,9 +130,9 @@ export default async function TenantsPage({
             <thead>
               <tr>
                 <th>Locataire</th>
-                <th>CIN</th>
-                <th>Téléphone</th>
+                <th>Contact</th>
                 <th>Bien loué</th>
+                <th className="text-right">Loyer mensuel</th>
                 <th className="text-right">Loyers dus</th>
                 <th className="text-right">Loyers payés</th>
                 <th className="text-right">Impayés</th>
@@ -160,14 +160,20 @@ export default async function TenantsPage({
                         </span>
                       </Link>
                     </td>
-                    <td className="tabular-nums text-ink-600">{t.cin ?? '—'}</td>
-                    <td className="whitespace-nowrap text-ink-600">
+                    {/* Téléphone et CIN partagent une colonne : deux repères courts
+                        qui servent à identifier, pas à être comparés entre lignes. */}
+                    <td className="whitespace-nowrap">
                       {t.phone ? (
-                        <a href={`tel:${t.phone}`} className="inline-flex items-center gap-1.5 hover:text-brand-700">
+                        <a href={`tel:${t.phone}`} className="inline-flex items-center gap-1.5 text-ink-700 hover:text-brand-700">
                           <Phone className="size-4 text-ink-400" aria-hidden />
                           {t.phone}
                         </a>
-                      ) : '—'}
+                      ) : (
+                        <span className="text-ink-400">Sans téléphone</span>
+                      )}
+                      <span className="block text-sm tabular-nums text-ink-500">
+                        {t.cin ? `CIN ${t.cin}` : 'CIN non renseignée'}
+                      </span>
                     </td>
                     <td>
                       {contract ? (
@@ -178,7 +184,23 @@ export default async function TenantsPage({
                         <Badge tone="neutral" dot={false}>Sans contrat</Badge>
                       )}
                     </td>
-                    <td className="num font-semibold text-ink-900">{money(s?.total_du ?? 0)}</td>
+                    <td className="num">
+                      {contract ? (
+                        <>
+                          <span className="block font-semibold text-ink-900">
+                            {money(Number(contract.monthly_rent) + Number(contract.charges))}
+                          </span>
+                          {Number(contract.charges) > 0 && (
+                            <span className="block text-sm text-ink-500">
+                              dont {money(contract.charges)} de charges
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-ink-400">—</span>
+                      )}
+                    </td>
+                    <td className="num text-ink-800">{money(s?.total_du ?? 0)}</td>
                     <td className="num text-ok-700">{money(s?.total_paye ?? 0)}</td>
                     <td className="num">
                       {impayes > 0
@@ -206,7 +228,13 @@ export default async function TenantsPage({
             {tenants.length > 1 && (
               <tfoot>
                 <tr>
-                  <td colSpan={4}>Total</td>
+                  <td colSpan={3}>Total</td>
+                  <td className="num">
+                    {money(tenants.reduce((sum, t) => {
+                      const c = activeByTenant.get(t.id)
+                      return sum + (c ? Number(c.monthly_rent) + Number(c.charges) : 0)
+                    }, 0))}
+                  </td>
                   <td className="num">
                     {money(tenants.reduce((sum, t) => sum + Number(stats.get(t.id)?.total_du ?? 0), 0))}
                   </td>
