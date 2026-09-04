@@ -1,18 +1,19 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Receipt, TriangleAlert } from 'lucide-react'
+import { KeyRound, Receipt, TriangleAlert } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { rows } from '@/lib/supabase/rows'
 import { requireUser } from '@/lib/auth'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { RentStatusBadge } from '@/components/ui/Badge'
+import { DepositStatusBadge, RentStatusBadge } from '@/components/ui/Badge'
 import { StatCard } from '@/components/ui/StatCard'
 import { FilterBar, MonthFilter, ResetFilters, SearchFilter, SelectFilter } from '@/components/ui/Filters'
 import { PaymentDialog } from '@/components/payments/PaymentDialog'
 import { PayRemainingButton } from '@/components/payments/PayRemainingButton'
+import { DepositDialog } from '@/components/deposits/DepositDialog'
 import { RENT_STATUS, date, firstOfMonth, money, monthLabel } from '@/lib/format'
-import type { Property, RentView } from '@/lib/types'
+import type { ContractDeposit, Property, RentView } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Loyers' }
 
@@ -48,9 +49,12 @@ export default async function RentsPage({
     query = query.limit(500)
   }
 
-  const [{ data, error }, { data: propertyRows }] = await Promise.all([
+  const [{ data, error }, { data: propertyRows }, { data: depositRows }] = await Promise.all([
     query,
     supabase.from('properties').select('id, reference, name').order('reference'),
+    supabase.from('v_contract_deposits').select('*')
+      .eq('contract_status', 'actif')
+      .order('property_reference'),
   ])
 
   let rents = rows<RentView>(data)
@@ -64,6 +68,14 @@ export default async function RentsPage({
   }
 
   const properties = rows<Pick<Property, 'id' | 'reference' | 'name'>>(propertyRows)
+
+  // Cautions des contrats en cours. Sans rapport avec le mois affiché :
+  // une caution se verse une fois, elle n'est pas mensuelle.
+  const deposits = rows<ContractDeposit>(depositRows)
+    .filter((d) => Number(d.deposit_due) > 0 || Number(d.deposit_paid) > 0)
+  const depositDue = deposits.reduce((s, d) => s + Number(d.deposit_due), 0)
+  const depositPaid = deposits.reduce((s, d) => s + Number(d.deposit_paid), 0)
+  const depositBalance = deposits.reduce((s, d) => s + Number(d.deposit_balance), 0)
 
   const totalDu = rents.reduce((s, r) => s + Number(r.amount_due), 0)
   const totalPaye = rents.reduce((s, r) => s + Number(r.amount_paid), 0)
@@ -93,6 +105,82 @@ export default async function RentsPage({
           icon={<TriangleAlert className="size-5" />}
         />
       </div>
+
+      {deposits.length > 0 && (
+        <section className="card reveal mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
+            <h2 className="flex items-center gap-2 text-[17px] font-bold text-ink-900">
+              <KeyRound className="size-5 text-ink-400" aria-hidden />
+              Cautions des contrats en cours
+            </h2>
+            <p className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-ink-500">
+              <span>Total <strong className="text-ink-900">{money(depositDue)}</strong></span>
+              <span>Versé <strong className="text-ok-700">{money(depositPaid)}</strong></span>
+              <span>
+                Reste{' '}
+                <strong className={depositBalance > 0 ? 'text-warn-700' : 'text-ok-700'}>
+                  {money(depositBalance)}
+                </strong>
+              </span>
+            </p>
+          </div>
+
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Bien</th><th>Locataire</th>
+                  <th className="text-right">Caution</th>
+                  <th className="text-right">Versé</th>
+                  <th className="text-right">Reste</th>
+                  <th>Statut</th>
+                  {user.canWrite && <th className="no-print"><span className="sr-only">Actions</span></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {deposits.map((d) => (
+                  <tr key={d.contract_id}>
+                    <td>
+                      <Link href={`/contrats/${d.contract_id}`} className="text-ink-800 hover:text-brand-700">
+                        {d.property_name}
+                      </Link>
+                      <span className="block text-sm text-ink-500">{d.property_reference}</span>
+                    </td>
+                    <td className="whitespace-nowrap">
+                      <Link href={`/locataires/${d.tenant_id}`} className="text-ink-800 hover:text-brand-700">
+                        {d.tenant_first_name} {d.tenant_last_name}
+                      </Link>
+                    </td>
+                    <td className="num">{money(d.deposit_due)}</td>
+                    <td className="num text-ok-700">{money(d.deposit_paid)}</td>
+                    <td className={`num font-semibold ${Number(d.deposit_balance) > 0 ? 'text-warn-700' : 'text-ink-400'}`}>
+                      {money(d.deposit_balance)}
+                    </td>
+                    <td><DepositStatusBadge status={d.deposit_status} /></td>
+                    {user.canWrite && (
+                      <td className="no-print">
+                        {Number(d.deposit_balance) > 0 && (
+                          <div className="flex justify-end">
+                            <DepositDialog
+                              compact
+                              contractId={d.contract_id}
+                              due={Number(d.deposit_due)}
+                              paid={Number(d.deposit_paid)}
+                              balance={Number(d.deposit_balance)}
+                              tenantLabel={`${d.tenant_first_name} ${d.tenant_last_name}`}
+                              propertyLabel={d.property_name}
+                            />
+                          </div>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <FilterBar>
         <SearchFilter placeholder="Locataire, bien, CIN…" />

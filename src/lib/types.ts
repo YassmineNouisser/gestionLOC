@@ -9,6 +9,7 @@ export type PropertyType =
 export type ContractStatus = 'actif' | 'termine' | 'resilie'
 export type RentStatus = 'a_payer' | 'paye' | 'partiel' | 'impaye'
 export type PaymentMethod = 'especes' | 'virement' | 'cheque' | 'autre'
+export type DepositStatus = 'sans_caution' | 'a_verser' | 'partielle' | 'payee'
 export type ExpenseCategory =
   | 'reparation' | 'entretien' | 'travaux' | 'assurance'
   | 'eau' | 'electricite' | 'syndic' | 'taxes' | 'autres'
@@ -266,4 +267,36 @@ export interface MeterReadingView extends MeterReading {
   property_city: string | null
   tenant_first_name: string | null
   tenant_last_name: string | null
+}
+
+/** Versement de caution. Une caution peut être réglée en plusieurs fois. */
+export interface DepositPayment {
+  id: string
+  contract_id: string
+  tenant_id: string
+  property_id: string
+  amount: number
+  payment_date: string
+  method: PaymentMethod
+  reference: string | null
+  note: string | null
+  created_at: string
+}
+
+/** Vue v_contract_deposits : situation de la caution, par contrat. */
+export interface ContractDeposit {
+  contract_id: string
+  property_id: string
+  tenant_id: string
+  contract_status: ContractStatus
+  start_date: string
+  deposit_due: number
+  deposit_paid: number
+  deposit_balance: number
+  deposit_status: DepositStatus
+  deposit_payments_count: number
+  property_reference: string
+  property_name: string
+  tenant_first_name: string
+  tenant_last_name: string
 }

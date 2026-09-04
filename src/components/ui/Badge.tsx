@@ -1,5 +1,5 @@
-import type { ContractStatus, PropertyStatus, RentStatus, ExpenseCategory } from '@/lib/types'
-import { CONTRACT_STATUS, EXPENSE_CATEGORY, PROPERTY_STATUS, RENT_STATUS } from '@/lib/format'
+import type { ContractStatus, DepositStatus, PropertyStatus, RentStatus, ExpenseCategory } from '@/lib/types'
+import { CONTRACT_STATUS, DEPOSIT_STATUS, EXPENSE_CATEGORY, PROPERTY_STATUS, RENT_STATUS } from '@/lib/format'
 
 type Tone = 'ok' | 'warn' | 'bad' | 'info' | 'neutral'
 
@@ -55,4 +55,11 @@ export function RentStatusBadge({ status }: { status: RentStatus }) {
 
 export function CategoryBadge({ category }: { category: ExpenseCategory }) {
   return <Badge tone="neutral" dot={false}>{EXPENSE_CATEGORY[category]}</Badge>
+}
+
+const DEPOSIT_TONE: Record<DepositStatus, Tone> = {
+  payee: 'ok', partielle: 'warn', a_verser: 'bad', sans_caution: 'neutral',
+}
+export function DepositStatusBadge({ status }: { status: DepositStatus }) {
+  return <Badge tone={DEPOSIT_TONE[status]}>{DEPOSIT_STATUS[status]}</Badge>
 }

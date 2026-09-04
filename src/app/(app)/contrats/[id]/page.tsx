@@ -1,19 +1,22 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Home, Pencil, Receipt, User } from 'lucide-react'
+import { ArrowLeft, Home, KeyRound, Pencil, Receipt, User } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { row, rows } from '@/lib/supabase/rows'
 import { requireUser } from '@/lib/auth'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { ContractStatusBadge, RentStatusBadge } from '@/components/ui/Badge'
+import { ContractStatusBadge, DepositStatusBadge, RentStatusBadge } from '@/components/ui/Badge'
 import { StatCard } from '@/components/ui/StatCard'
 import { DeleteButton } from '@/components/ui/DeleteButton'
 import { DocumentsPanel } from '@/components/documents/DocumentsPanel'
 import { ContractStatusControl } from '@/components/contracts/ContractStatusControl'
+import { DepositDialog } from '@/components/deposits/DepositDialog'
 import { deleteContract } from '@/lib/actions/contracts'
-import { date, money, monthLabel } from '@/lib/format'
-import type { Contract, DocumentRow, Property, RentView, Tenant } from '@/lib/types'
+import { PAYMENT_METHOD, date, money, monthLabel } from '@/lib/format'
+import type {
+  Contract, ContractDeposit, DepositPayment, DocumentRow, Property, RentView, Tenant,
+} from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Contrat' }
 
@@ -45,15 +48,21 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
   const contract = row<ContractDetail>(data)
   if (!contract) notFound()
 
-  const [{ data: rentRows }, { data: docRows }] = await Promise.all([
-    supabase.from('v_rents').select('*').eq('contract_id', id)
-      .order('period_month', { ascending: false }),
-    supabase.from('documents').select('*').eq('entity_type', 'contract').eq('entity_id', id)
-      .order('created_at', { ascending: false }),
-  ])
+  const [{ data: rentRows }, { data: docRows }, { data: depositRow }, { data: depositPayRows }] =
+    await Promise.all([
+      supabase.from('v_rents').select('*').eq('contract_id', id)
+        .order('period_month', { ascending: false }),
+      supabase.from('documents').select('*').eq('entity_type', 'contract').eq('entity_id', id)
+        .order('created_at', { ascending: false }),
+      supabase.from('v_contract_deposits').select('*').eq('contract_id', id).maybeSingle(),
+      supabase.from('deposit_payments').select('*').eq('contract_id', id)
+        .order('payment_date', { ascending: false }),
+    ])
 
   const rents = rows<RentView>(rentRows)
   const documents = rows<DocumentRow>(docRows)
+  const deposit = row<ContractDeposit>(depositRow)
+  const depositPayments = rows<DepositPayment>(depositPayRows)
 
   const totalDu = rents.reduce((s, r) => s + Number(r.amount_due), 0)
   const totalPaye = rents.reduce((s, r) => s + Number(r.amount_paid), 0)
@@ -139,6 +148,73 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
             )}
           </section>
 
+          {/* Caution */}
+          {deposit && Number(deposit.deposit_due) > 0 && (
+            <section className="card">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-4">
+                <h2 className="flex items-center gap-2 text-[17px] font-bold text-ink-900">
+                  <KeyRound className="size-5 text-ink-400" aria-hidden />
+                  Caution
+                </h2>
+                <div className="flex items-center gap-3">
+                  <DepositStatusBadge status={deposit.deposit_status} />
+                  {user.canWrite && Number(deposit.deposit_balance) > 0 && (
+                    <DepositDialog
+                      compact
+                      contractId={id}
+                      due={Number(deposit.deposit_due)}
+                      paid={Number(deposit.deposit_paid)}
+                      balance={Number(deposit.deposit_balance)}
+                      tenantLabel={tenantLabel}
+                      propertyLabel={contract.properties?.name ?? 'Bien'}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <dl className="grid grid-cols-3 gap-px border-b border-ink-100 bg-ink-100">
+                {[
+                  { label: 'Caution due', value: money(deposit.deposit_due), tone: 'text-ink-900' },
+                  { label: 'Versé', value: money(deposit.deposit_paid), tone: 'text-ok-700' },
+                  {
+                    label: 'Reste',
+                    value: money(deposit.deposit_balance),
+                    tone: Number(deposit.deposit_balance) > 0 ? 'text-warn-700' : 'text-ink-400',
+                  },
+                ].map((item) => (
+                  <div key={item.label} className="bg-white px-5 py-4">
+                    <dt className="text-[12px] font-semibold text-ink-500">{item.label}</dt>
+                    <dd className={`mt-1 text-lg font-bold tabular-nums ${item.tone}`}>{item.value}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              {depositPayments.length === 0 ? (
+                <p className="px-5 py-6 text-center text-[15px] text-ink-500">
+                  Aucun versement enregistré.
+                </p>
+              ) : (
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr><th>Date</th><th>Mode</th><th>Référence</th><th className="text-right">Montant</th></tr>
+                    </thead>
+                    <tbody>
+                      {depositPayments.map((d) => (
+                        <tr key={d.id}>
+                          <td className="whitespace-nowrap font-medium">{date(d.payment_date)}</td>
+                          <td className="text-ink-600">{PAYMENT_METHOD[d.method]}</td>
+                          <td className="text-ink-500">{d.reference ?? '—'}</td>
+                          <td className="num font-semibold text-ok-700">{money(d.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          )}
+
           {(contract.conditions || contract.notes) && (
             <section className="card p-5">
               {contract.conditions && (
@@ -211,7 +287,6 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
             <dl className="divide-y divide-ink-100">
               <InfoRow label="Loyer hors charges" value={money(contract.monthly_rent)} />
               <InfoRow label="Charges" value={money(contract.charges)} />
-              <InfoRow label="Caution" value={money(contract.deposit)} />
               <InfoRow label="Jour d'échéance" value={`Le ${contract.due_day}`} />
               <InfoRow label="Date de début" value={date(contract.start_date)} />
               <InfoRow label="Date de fin" value={contract.end_date ? date(contract.end_date) : 'Indéterminée'} />

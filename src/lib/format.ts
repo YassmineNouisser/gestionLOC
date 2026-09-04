@@ -3,7 +3,7 @@
 // =============================================================================
 
 import type {
-  ContractStatus, ExpenseCategory, PaymentMethod,
+  ContractStatus, DepositStatus, ExpenseCategory, PaymentMethod,
   PropertyStatus, PropertyType, RentStatus, UserRole, DocType,
 } from './types'
 
@@ -153,6 +153,13 @@ export const RENT_STATUS: Record<RentStatus, string> = {
   paye: 'Payé',
   partiel: 'Partiel',
   impaye: 'Impayé',
+}
+
+export const DEPOSIT_STATUS: Record<DepositStatus, string> = {
+  sans_caution: 'Sans caution',
+  a_verser: 'À verser',
+  partielle: 'Partielle',
+  payee: 'Versée',
 }
 
 export const PAYMENT_METHOD: Record<PaymentMethod, string> = {
