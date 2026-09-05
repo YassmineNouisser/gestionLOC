@@ -5,9 +5,14 @@ import { createClient } from '@/lib/supabase/server'
 import { rows } from '@/lib/supabase/rows'
 import { type ActionState, pgMessage } from './shared'
 
-/** Tables sauvegardées, dans l'ordre des dépendances (parents d'abord). */
+/**
+ * Tables sauvegardées, dans l'ordre des dépendances (parents d'abord).
+ * Toute nouvelle table métier doit être ajoutée ici : une sauvegarde qui en
+ * oublie une inspire une fausse confiance, ce qui est pire que pas de sauvegarde.
+ */
 const TABLES = [
-  'tenants', 'properties', 'contracts', 'rents', 'payments', 'expenses', 'documents',
+  'tenants', 'properties', 'contracts', 'rents', 'payments', 'expenses',
+  'meter_readings', 'deposit_payments', 'documents',
 ] as const
 
 type TableName = (typeof TABLES)[number]
@@ -34,7 +39,7 @@ export async function exportBackup(): Promise<
 
   for (const table of TABLES) {
     const { data: tableRows, error } = await supabase.from(table).select('*')
-    if (error) return { backup: null, error: `Export de « ${table} » impossible : ${error.message}` }
+    if (error) return { backup: null, error: `Export de « ${TABLE_LABEL[table]} » impossible : ${error.message}` }
     const list = rows<Record<string, unknown>>(tableRows)
     data[table] = list
     counts[table] = list.length
@@ -52,10 +57,28 @@ export async function exportBackup(): Promise<
   }
 }
 
+/** Libellés lisibles pour le compte rendu de restauration. */
+const TABLE_LABEL: Record<TableName, string> = {
+  tenants: 'Locataires',
+  properties: 'Biens',
+  contracts: 'Contrats',
+  rents: 'Loyers',
+  payments: 'Paiements',
+  expenses: 'Dépenses',
+  meter_readings: 'Relevés de compteurs',
+  deposit_payments: 'Versements de caution',
+  documents: 'Documents',
+}
+
 /** Colonnes calculées par la base : jamais réécrites lors d'une restauration. */
 const GENERATED_COLUMNS: Partial<Record<TableName, string[]>> = {
   properties: ['total_investment'],
   rents: ['amount_paid'],
+  meter_readings: [
+    'water_consumption', 'water_amount',
+    'elec_consumption', 'elec_amount',
+    'total_amount',
+  ],
 }
 
 /**
@@ -146,13 +169,15 @@ export async function restoreBackup(
 
       if (error) {
         return {
-          error: `Restauration interrompue sur « ${table} » : ${pgMessage(error)}`,
+          error: `Restauration interrompue sur « ${TABLE_LABEL[table]} » : ${pgMessage(error)}`,
           report,
         }
       }
     }
 
-    report.push(`${table} : ${payload.length} ligne${payload.length > 1 ? 's' : ''} restaurée${payload.length > 1 ? 's' : ''}`)
+    report.push(
+      `${TABLE_LABEL[table]} : ${payload.length} ligne${payload.length > 1 ? 's' : ''} restaurée${payload.length > 1 ? 's' : ''}`,
+    )
   }
 
   // Les loyers dépendent des paiements restaurés : on resynchronise.
