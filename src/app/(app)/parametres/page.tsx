@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import {
-  ArrowRight, Database, History, RefreshCw, Shield, User,
+  ArrowRight, BellRing, Database, History, RefreshCw, Shield, User,
 } from 'lucide-react'
 import { requireUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
@@ -10,7 +10,10 @@ import { PasswordForm, ProfileForm } from '@/components/settings/ProfileForm'
 import {
   ExportBackupButton, RegenerateRentsButton, RestoreBackupButton,
 } from '@/components/settings/BackupPanel'
+import { NtfyPanel } from '@/components/settings/NtfyPanel'
+import { rows, row } from '@/lib/supabase/rows'
 import { USER_ROLE } from '@/lib/format'
+import type { AppSettings, NotificationDelivery } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Paramètres' }
 export const dynamic = 'force-dynamic'
@@ -43,8 +46,12 @@ export default async function SettingsPage() {
   const user = await requireUser()
   const supabase = await createClient()
 
-  const { count: auditCount } = await supabase
-    .from('audit_log').select('id', { count: 'exact', head: true })
+  const [{ count: auditCount }, { data: settingsRow }, { data: deliveryRows }] = await Promise.all([
+    supabase.from('audit_log').select('id', { count: 'exact', head: true }),
+    supabase.from('app_settings').select('*').eq('id', 1).maybeSingle(),
+    supabase.from('notification_deliveries').select('*')
+      .order('sent_at', { ascending: false }).limit(5),
+  ])
 
   return (
     <>
@@ -59,6 +66,17 @@ export default async function SettingsPage() {
         <Card icon={<Shield className="size-5" />} title="Sécurité"
               description="Choisissez un mot de passe long et unique.">
           <PasswordForm />
+        </Card>
+
+        <Card
+          icon={<BellRing className="size-5" />}
+          title="Notifications sur mobile"
+          description="Recevez une alerte sur votre téléphone dès qu'un loyer dépasse son échéance du nombre de jours choisi."
+        >
+          <NtfyPanel
+            settings={row<AppSettings>(settingsRow)}
+            deliveries={rows<NotificationDelivery>(deliveryRows)}
+          />
         </Card>
 
         <Card icon={<Database className="size-5" />} title="Sauvegarde et restauration"

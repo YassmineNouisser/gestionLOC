@@ -300,3 +300,24 @@ export interface ContractDeposit {
   tenant_first_name: string
   tenant_last_name: string
 }
+
+/** Réglages de l'application. Une seule ligne en base. */
+export interface AppSettings {
+  id: number
+  ntfy_enabled: boolean
+  ntfy_server: string
+  ntfy_topic: string | null
+  overdue_days: number
+  app_url: string
+  updated_at: string
+}
+
+/** Notification effectivement envoyée, pour affichage du journal. */
+export interface NotificationDelivery {
+  id: string
+  rent_id: string
+  kind: string
+  topic: string | null
+  message: string | null
+  sent_at: string
+}
