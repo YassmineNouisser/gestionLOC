@@ -129,8 +129,10 @@ export function ContractForm({
             <Field label="Loyer mensuel" name="monthly_rent" required>
               <MoneyInput name="monthly_rent" value={rent} onChange={(e) => setRent(e.target.value)} required />
             </Field>
-            <Field label="Charges mensuelles" name="charges" hint="Ajoutées au montant dû chaque mois.">
-              <MoneyInput name="charges" value={charges} onChange={(e) => setCharges(e.target.value)} />
+            <Field label="Charges mensuelles" name="charges"
+                   hint="Uniquement les charges fixes, ajoutées au loyer chaque mois. Laissez vide si elles varient : elles se refacturent alors par les relevés d'eau et d'électricité.">
+              <MoneyInput name="charges" value={charges} onChange={(e) => setCharges(e.target.value)}
+                          placeholder="Aucune" />
             </Field>
             <Field label="Caution" name="deposit">
               <MoneyInput name="deposit" defaultValue={contract?.deposit ?? ''} />

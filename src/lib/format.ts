@@ -45,6 +45,18 @@ export function moneyShort(v: number | null | undefined): string {
   return `${spaced(nfWhole.format(Math.round(Number(v ?? 0))))}\u00a0DT`
 }
 
+/**
+ * Charges mensuelles fixes, ajoutées au loyer chaque mois.
+ *
+ * Le champ est facultatif : quand les charges varient d'un mois sur l'autre,
+ * on le laisse vide et la part réelle est refacturée par les relevés de
+ * compteurs. Afficher « 0 DT » laisserait croire à un montant constaté, alors
+ * qu'il n'y a simplement rien de fixe à ajouter.
+ */
+export function chargesLabel(v: number | null | undefined): string {
+  return Number(v ?? 0) > 0 ? money(v) : 'Aucune charge fixe'
+}
+
 /** Montant compact pour les axes : 12 500 -> "12,5 k". */
 export function moneyCompact(v: number | null | undefined): string {
   const n = Number(v ?? 0)

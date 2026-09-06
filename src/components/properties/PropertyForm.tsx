@@ -96,8 +96,9 @@ export function PropertyForm({
             <Field label="Loyer mensuel" name="monthly_rent">
               <MoneyInput name="monthly_rent" defaultValue={property?.monthly_rent ?? ''} placeholder="0" />
             </Field>
-            <Field label="Charges mensuelles" name="charges">
-              <MoneyInput name="charges" defaultValue={property?.charges ?? ''} placeholder="0" />
+            <Field label="Charges mensuelles" name="charges"
+                   hint="Uniquement les charges fixes. Laissez vide si elles varient d'un mois à l'autre.">
+              <MoneyInput name="charges" defaultValue={property?.charges ?? ''} placeholder="Aucune" />
             </Field>
             <Field label="Échéance de l'assurance" name="insurance_expiry"
                    hint="Une alerte apparaîtra 60 jours avant l'échéance.">

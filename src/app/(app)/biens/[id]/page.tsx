@@ -14,7 +14,7 @@ import { DocumentsPanel } from '@/components/documents/DocumentsPanel'
 import { PropertyStatusControl } from '@/components/properties/PropertyStatusControl'
 import { deleteProperty } from '@/lib/actions/properties'
 import {
-  PROPERTY_TYPE, date, money, monthLabel, num, percent, tenantName,
+  PROPERTY_TYPE, chargesLabel, date, money, monthLabel, num, percent, tenantName,
 } from '@/lib/format'
 import type {
   Contract, DocumentRow, Expense, MeterReadingView, Property, PropertyStats,
@@ -200,7 +200,7 @@ export default async function PropertyDetailPage({
 
                 <dl className="mt-4 grid gap-x-8 border-t border-ink-100 pt-2 sm:grid-cols-2">
                   <InfoRow label="Loyer mensuel" value={money(activeContract.monthly_rent)} />
-                  <InfoRow label="Charges" value={money(activeContract.charges)} />
+                  <InfoRow label="Charges" value={chargesLabel(activeContract.charges)} />
                   <InfoRow label="Début" value={date(activeContract.start_date)} />
                   <InfoRow label="Fin" value={activeContract.end_date ? date(activeContract.end_date) : 'Indéterminée'} />
                   <InfoRow label="Jour d'échéance" value={`Le ${activeContract.due_day} de chaque mois`} />
@@ -400,7 +400,7 @@ export default async function PropertyDetailPage({
               <InfoRow label="Surface" value={property.surface != null ? `${num(property.surface, 0)} m²` : '—'} />
               <InfoRow label="Chambres" value={property.rooms ?? '—'} />
               <InfoRow label="Loyer de référence" value={money(property.monthly_rent)} />
-              <InfoRow label="Charges" value={money(property.charges)} />
+              <InfoRow label="Charges" value={chargesLabel(property.charges)} />
               <InfoRow label="Tarif eau" value={`${num(property.water_rate, 3)} DT / m³`} />
               <InfoRow label="Tarif électricité" value={`${num(property.electricity_rate, 3)} DT / kWh`} />
             </dl>

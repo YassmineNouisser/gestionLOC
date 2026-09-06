@@ -13,7 +13,7 @@ import { StatCard } from '@/components/ui/StatCard'
 import { DeleteButton } from '@/components/ui/DeleteButton'
 import { DocumentsPanel } from '@/components/documents/DocumentsPanel'
 import { deleteTenant } from '@/lib/actions/tenants'
-import { PAYMENT_METHOD, date, money, monthLabel, num } from '@/lib/format'
+import { PAYMENT_METHOD, chargesLabel, date, money, monthLabel, num } from '@/lib/format'
 import type {
   Contract, DocumentRow, MeterReadingView, Payment, Property, RentView,
   Tenant, TenantStats,
@@ -157,7 +157,7 @@ export default async function TenantDetailPage({ params }: { params: Promise<{ i
                 <dl className="mt-4 grid gap-x-8 border-t border-ink-100 pt-3 sm:grid-cols-2">
                   {[
                     ['Loyer mensuel', money(activeContract.monthly_rent)],
-                    ['Charges', money(activeContract.charges)],
+                    ['Charges', chargesLabel(activeContract.charges)],
                     ['Début', date(activeContract.start_date)],
                     ['Fin', activeContract.end_date ? date(activeContract.end_date) : 'Indéterminée'],
                     ['Caution', money(activeContract.deposit)],

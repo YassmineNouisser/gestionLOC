@@ -13,7 +13,7 @@ import { DocumentsPanel } from '@/components/documents/DocumentsPanel'
 import { ContractStatusControl } from '@/components/contracts/ContractStatusControl'
 import { DepositDialog } from '@/components/deposits/DepositDialog'
 import { deleteContract } from '@/lib/actions/contracts'
-import { PAYMENT_METHOD, date, money, monthLabel } from '@/lib/format'
+import { PAYMENT_METHOD, chargesLabel, date, money, monthLabel } from '@/lib/format'
 import type {
   Contract, ContractDeposit, DepositPayment, DocumentRow, Property, RentView, Tenant,
 } from '@/lib/types'
@@ -103,7 +103,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Loyer mensuel" value={money(Number(contract.monthly_rent) + Number(contract.charges))}
-                  hint={contract.charges > 0 ? `dont ${money(contract.charges)} de charges` : 'sans charges'} />
+                  hint={contract.charges > 0 ? `dont ${money(contract.charges)} de charges` : 'sans charges fixes'} />
         <StatCard label="Total dû" value={money(totalDu)} hint={`${rents.length} mois générés`} />
         <StatCard label="Total encaissé" value={money(totalPaye)} tone="ok" />
         <StatCard label="Reste à payer" value={money(totalReste)} tone={totalReste > 0 ? 'bad' : 'default'} />
@@ -286,7 +286,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
             <h2 className="mb-1 text-[17px] font-bold text-ink-900">Détails du bail</h2>
             <dl className="divide-y divide-ink-100">
               <InfoRow label="Loyer hors charges" value={money(contract.monthly_rent)} />
-              <InfoRow label="Charges" value={money(contract.charges)} />
+              <InfoRow label="Charges" value={chargesLabel(contract.charges)} />
               <InfoRow label="Jour d'échéance" value={`Le ${contract.due_day}`} />
               <InfoRow label="Date de début" value={date(contract.start_date)} />
               <InfoRow label="Date de fin" value={contract.end_date ? date(contract.end_date) : 'Indéterminée'} />
